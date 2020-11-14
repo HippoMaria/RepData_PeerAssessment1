@@ -1,25 +1,108 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "Assignment 6"
+author: "Xin Gao"
+date: "11/14/2020"
+output: html_document
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
-## Loading and preprocessing the data
+## Q1. Loading and preprocessing the data
 
+```{r}
+setwd("C:/Users/xgao/Desktop/R/Assignment 6")
+act<-read.csv("activity.csv")
+str(act)
+```
 
+## Q2. What is mean total number of steps taken per day?
 
-## What is mean total number of steps taken per day?
+Histogram of the total number of steps taken each day:
+```{r}
+library(dplyr)
 
+act$Date<-as.Date(act$date, "%Y-%m-%d")
+daily<-with(act,tapply(steps,Date,sum))
 
+barplot(daily, main = "Daily Average Steps",
+        xlab = "Day",
+        ylab = "Steps")
+```
 
-## What is the average daily activity pattern?
+Mean and median number of steps taken each day
 
+```{r}
+mean(daily, na.rm=TRUE)
+median(daily, na.rm=TRUE)
+```
 
+## Q3. What is the average daily activity pattern?
 
-## Imputing missing values
+Time series plot of the daily activity pattern:
+```{r}
+pattern<-with(act,tapply(steps,interval, mean, na.rm=TRUE))
+plot(pattern, type = "l", main="Time Series Pattern of Average Steps",xlab="Interval",ylab="Steps")
+```
 
+Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+```{r}
+df<-as.data.frame(pattern)
+max<-max(pattern)
+hi<-df[which(df$pattern==max),]
+hi
+```
 
+## Q4. Imputing missing values
 
-## Are there differences in activity patterns between weekdays and weekends?
+1. Calculate and report the total number of missing values in the dataset:
+```{r}
+sum(is.na(act$steps))
+```
+
+2. Devise a strategy for filling in all of the missing values in the dataset -- I decide to replace missing values with the mean.  
+
+3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
+```{r}
+average<-mean(act$steps, na.rm=TRUE)
+average
+act$steps[is.na(act$steps)] <- average
+head(act)
+```
+
+Make a histogram of the total number of steps taken each day:
+
+```{r}
+daily2<-with(act,tapply(steps,Date,sum))
+
+barplot(daily2, main = "Daily Average Steps (Imputed)",
+        xlab = "Day",
+        ylab = "Steps")
+```
+
+Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+```{r}
+mean(daily2, na.rm=TRUE)
+median(daily2, na.rm=TRUE)
+```
+We can see the mean is the same as the estimates from the first part, because I imputed missing values using the mean. The median is slightly different. The impact of imputing missing data is very small.
+
+## Q6. Are there differences in activity patterns between weekdays and weekends?
+
+Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+```{r}
+act$week<-weekdays(act$Date)
+act$weekend<-ifelse(act$week=="Saturday"|act$week=="Sunday",1,0)
+```
+Make a panel plot containing a time series plot by weekday and weekend:
+```{r}
+
+act0<-subset(act,act$weekend==0)
+act1<-subset(act,act$weekend==1)
+pattern0<-with(act0,tapply(steps,interval, mean, na.rm=TRUE))
+pattern1<-with(act1,tapply(steps,interval, mean, na.rm=TRUE))
+par(mfrow=c(2,1), mar=c(4,4,2,1))
+plot(pattern0, type = "l", main="Weekday Pattern of Average Steps",xlab="Interval",ylab="Steps")
+plot(pattern1, type = "l", main="Weekend Pattern of Average Steps",xlab="Interval",ylab="Steps")
+```
